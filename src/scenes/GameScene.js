@@ -1,36 +1,25 @@
-import Phaser from 'phaser';
-import Generator from '../map/Generator.js';
-
-class GameScene extends Phaser.Scene {
+export default class GameScene extends Phaser.Scene {
   constructor() {
-    super({ key: 'GameScene' });
-    this.MAP_WIDTH = 50;
-    this.MAP_HEIGHT = 50;
-    this.TILE_SIZE = 16;
+    super('GameScene');
   }
 
   preload() {
-    this.load.image('tiles', 'assets/tileSet/walls_floor.png');
+    this.load.image('player', 'https://examples.phaser.io/assets/sprites/phaser-dude.png');
   }
 
   create() {
-    const gen = new Generator(this.MAP_WIDTH, this.MAP_HEIGHT);
-    const mapData = gen.generateDungeonMap(8, 5, 12);
+    this.player = this.physics.add.sprite(this.scale.width / 2, this.scale.height / 2, 'player');
+    this.player.setCollideWorldBounds(true);
 
-    const map = this.make.tilemap({
-      data: mapData,
-      tileWidth: this.TILE_SIZE,
-      tileHeight: this.TILE_SIZE,
-    });
+    this.cursors = this.input.keyboard.createCursorKeys();
+  }
 
-    const tileset = map.addTilesetImage('tiles', 'tiles', this.TILE_SIZE, this.TILE_SIZE);
-    const layer = map.createLayer(0, tileset, 0, 0);
+  update() {
+    this.player.setVelocity(0);
+    if (this.cursors.left.isDown) this.player.setVelocityX(-200);
+    else if (this.cursors.right.isDown) this.player.setVelocityX(200);
 
-    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
-    this.scale.on('resize', (gameSize) => {
-      this.cameras.resize(gameSize.width, gameSize.height);
-    });
+    if (this.cursors.up.isDown) this.player.setVelocityY(-200);
+    else if (this.cursors.down.isDown) this.player.setVelocityY(200);
   }
 }
-
-export default GameScene;

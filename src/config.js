@@ -1,11 +1,24 @@
-window.config = {
+import GameScene from './scenes/GameScene.js';
+
+export default {
   type: Phaser.AUTO,
   parent: 'game-container',
-  backgroundColor: '#000000',
+  backgroundColor: '#1d1d1d',
+  pixelArt: true,
   scale: {
-    mode: Phaser.Scale.RESIZE,
+    mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    // não define width nem height fixos porque o canvas vai ser redimensionado
+    width: 1920,
+    height: 1080,
+    min: { width: 960, height: 540 },
+    max: { width: 3840, height: 2160 },
   },
-  scene: [], // adicionada depois
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { y: 0 },
+      debug: false
+    }
+  },
+  scene: [GameScene]
 };

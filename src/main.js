@@ -1,9 +1,8 @@
-import Phaser from 'phaser';
-import GameScene from './scenes/GameScene.js';
+import config from './config.js';
 
-// Use o config que voc� exportou no config.js
-import './config.js';
+const game = new Phaser.Game(config);
 
-window.config.scene = [GameScene];
-
-const game = new Phaser.Game(window.config);
+// Opcional: para lidar com resize manual (quase nunca necessário com FIT)
+window.addEventListener('resize', () => {
+  game.scale.resize(window.innerWidth, window.innerHeight);
+});
