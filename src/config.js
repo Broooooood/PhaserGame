@@ -6,7 +6,7 @@ export default {
   backgroundColor: '#1d1d1d',
   pixelArt: true,
   scale: {
-    mode: Phaser.Scale.FIT,
+    mode: Phaser.Scale.RESIZE,   // modo resize para redimensionar sempre que a tela mudar
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width: 1920,
     height: 1080,
@@ -17,8 +17,10 @@ export default {
     default: 'arcade',
     arcade: {
       gravity: { y: 0 },
-      debug: false
-    }
+      debug: false,
+    },
   },
-  scene: [GameScene]
+  scene: [GameScene],
 };
+
+
