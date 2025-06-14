@@ -5,28 +5,40 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
+    this.setOrigin(0.5, 0.5);
+    this.body.setSize(this.width, this.height);
+    this.body.setOffset(0, 0);
+
     this.setCollideWorldBounds(true);
+
+    this.maxHealth = 100;
+    this.currentHealth = this.maxHealth;
 
     this.keyW = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
     this.keyA = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
     this.keyS = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
     this.keyD = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
     this.shiftKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
-    // Botão esquerdo do mouse para ataque
     this.attackButton = scene.input.activePointer;
 
     this.speed = 150;
     this.runSpeed = 250;
-    this.attackMoveSpeed = 50; // Velocidade reduzida durante ataque
+    this.attackMoveSpeed = 50;
 
     this.isAttacking = false;
     this.attackCombo = 0;
     this.attackTimer = 0;
-    this.comboResetTime = 600; // Tempo para resetar combo (ms)
+    this.comboResetTime = 600;
 
     this.createAnimations(scene);
-
     this.anims.play('idle');
+
+    // Hitbox de ataque invis�vel
+    this.attackHitbox = scene.add.rectangle(0, 0, 60, 30, 0xff0000, 0);
+    scene.physics.add.existing(this.attackHitbox);
+    this.attackHitboxBody = this.attackHitbox.body;
+    this.attackHitboxBody.setAllowGravity(false);
+    this.attackHitboxBody.setEnable(false);
   }
 
   createAnimations(scene) {
@@ -94,8 +106,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-update(time) {
-    // Ataque
+  update(time) {
     if (this.attackButton.isDown && !this.isAttacking) {
       this.handleAttack(time);
       return;
@@ -113,14 +124,13 @@ update(time) {
     let moving = false;
     this.setVelocity(0);
 
-    // MOVIMENTO COM WASD:
     if (this.keyA.isDown) {
       this.setVelocityX(-velocity);
-      this.setFlipX(true);
+      this.setScale(-1, 1);
       moving = true;
     } else if (this.keyD.isDown) {
       this.setVelocityX(velocity);
-      this.setFlipX(false);
+      this.setScale(1, 1);
       moving = true;
     }
 
@@ -141,27 +151,28 @@ update(time) {
     }
   }
 
+  takeDamage(amount) {
+    this.currentHealth -= amount;
+    if (this.currentHealth < 0) this.currentHealth = 0;
+    // Voc� pode colocar efeitos de dano aqui tamb�m
+  }
+
   handleAttack(time) {
     if (this.isAttacking) return;
 
     const isRunning = this.shiftKey.isDown && !this.isAttacking;
 
-    // Ataque especial de corrida
     if (isRunning && this.attackCombo === 0) {
       this.isAttacking = true;
       this.anims.play('attackRun', true);
       this.attackTimer = time;
       this.attackCombo = 0;
-
-      // Velocidade reduzida na direção que o personagem está virado
       this.setVelocity(this.attackMoveSpeed * (this.flipX ? -1 : 1), 0);
 
       this.once('animationcomplete', () => {
         this.isAttacking = false;
         this.attackCombo = 1;
         this.attackTimer = this.scene.time.now;
-
-        // Continua o combo se o botão ainda estiver pressionado
         if (this.attackButton.isDown) {
           this.handleAttack(this.scene.time.now);
         }
@@ -169,7 +180,6 @@ update(time) {
       return;
     }
 
-    // Combo normal (attack1 → attack2 → attack3)
     this.isAttacking = true;
     this.attackCombo++;
     if (this.attackCombo > 3) this.attackCombo = 1;
@@ -180,14 +190,22 @@ update(time) {
 
     this.setVelocity(this.attackMoveSpeed * (this.flipX ? -1 : 1), 0);
 
+    // Hitbox de ataque ativada
+    const offsetX = this.flipX ? -30 : 30;
+    this.attackHitbox.setPosition(this.x + offsetX, this.y);
+    this.attackHitboxBody.setEnable(true);
+
+    this.scene.time.delayedCall(200, () => {
+      this.attackHitboxBody.setEnable(false);
+    });
+
     this.once('animationcomplete', () => {
       this.isAttacking = false;
+      this.attackHitboxBody.setEnable(false);
 
       if (this.attackButton.isDown) {
-        // Continua o combo automaticamente enquanto o botão estiver pressionado
         this.handleAttack(this.scene.time.now);
       } else {
-        // Reseta o combo após o tempo se soltar o botão
         this.scene.time.delayedCall(this.comboResetTime, () => {
           if (!this.isAttacking && this.scene.time.now - this.attackTimer >= this.comboResetTime) {
             this.attackCombo = 0;

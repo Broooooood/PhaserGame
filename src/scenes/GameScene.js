@@ -1,4 +1,6 @@
 import Player from '../characters/Player.js';
+import Slime from '../characters/enemies/Slime.js';
+
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -134,6 +136,30 @@ export default class GameScene extends Phaser.Scene {
 
     this.player = new Player(this, this.mapWidth / 2, this.mapHeight / 2);
 
+    this.slimesGroup = this.physics.add.group();
+    const slime = new Slime(this, 100, 100, this.player);
+    this.slimesGroup.add(slime);
+
+    this.physics.add.overlap(this.player, this.slimesGroup, (player, slime) => {
+      slime.dealDamage(player);
+    });
+
+    this.physics.add.overlap(this.player.attackHitbox, this.slimesGroup, (hitbox, slime) => {
+      if (this.player.isAttacking && !slime.isDead) {
+        slime.takeDamage(20); // ou outro valor
+      }
+    });
+
+
+  // Barra de fundo preta, origem central
+    this.healthBarBackground = this.add.rectangle(0, 0, 128, 10, 0x000000);
+    this.healthBarBackground.setOrigin(0.5, 0.5);
+
+    // Barra vermelha de preenchimento, origem à esquerda e verticalmente centralizada
+    this.healthBarFill = this.add.rectangle(0, 0, 128, 10, 0xff0000);
+    this.healthBarFill.setOrigin(0, 0.5);
+
+
     this.physics.world.setBounds(0, 0, this.mapWidth, this.mapHeight);
 
     const cam = this.cameras.main;
@@ -164,5 +190,22 @@ export default class GameScene extends Phaser.Scene {
 
   update(time, delta) {
     this.player.update(time);
+
+    this.slimesGroup.children.iterate((slime) => {
+      slime.update();
+    });
+
+ const healthPercent = this.player.currentHealth / this.player.maxHealth;
+  this.healthBarFill.width = 128 * healthPercent;
+
+  // Posi��o da barra: x central do player, y acima dele
+  const barX = this.player.x;
+  const barY = this.player.y - 80;
+
+  // Posiciona o fundo centralizado
+  this.healthBarBackground.setPosition(barX, barY);
+
+  // Posiciona o preenchimento alinhado � esquerda do fundo
+  this.healthBarFill.setPosition(barX - 128 / 2, barY);
   }
 }
