@@ -20,6 +20,26 @@ export default class GameScene extends Phaser.Scene {
       frameWidth: 128,
       frameHeight: 128
     });
+
+    this.load.spritesheet('player_attak1', 'src/assets/player/Attack1.png', {
+      frameWidth: 128,
+      frameHeight: 128
+    });
+
+    this.load.spritesheet('player_attak2', 'src/assets/player/Attack2.png', {
+      frameWidth: 128,
+      frameHeight: 128
+    });
+
+    this.load.spritesheet('player_attak3', 'src/assets/player/Attack3.png', {
+      frameWidth: 128,
+      frameHeight: 128
+    });
+
+    this.load.spritesheet('player_attakRun', 'src/assets/player/Run+Attack.png', {
+      frameWidth: 128,
+      frameHeight: 128
+    });
   }
 
   create() {
@@ -56,7 +76,7 @@ export default class GameScene extends Phaser.Scene {
     this.cameras.main.setZoom(zoom);
   }
 
-  update() {
-    this.player.update();
+  update(time, delta) {
+    this.player.update(time);
   }
 }
