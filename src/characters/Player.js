@@ -7,18 +7,22 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.setCollideWorldBounds(true);
 
-    this.cursors = scene.input.keyboard.createCursorKeys();
+    this.keyW = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+    this.keyA = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+    this.keyS = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+    this.keyD = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
     this.shiftKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
-    this.attackKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    // Botão esquerdo do mouse para ataque
+    this.attackButton = scene.input.activePointer;
 
     this.speed = 150;
     this.runSpeed = 250;
-    
+    this.attackMoveSpeed = 50; // Velocidade reduzida durante ataque
 
     this.isAttacking = false;
     this.attackCombo = 0;
     this.attackTimer = 0;
-    this.comboResetTime = 100; // Tempo para resetar combo (ms)
+    this.comboResetTime = 600; // Tempo para resetar combo (ms)
 
     this.createAnimations(scene);
 
@@ -88,43 +92,47 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         repeat: 0
       });
     }
-
   }
 
-  update(time) {
+update(time) {
     // Ataque
-    if (Phaser.Input.Keyboard.JustDown(this.attackKey)) {
+    if (this.attackButton.isDown && !this.isAttacking) {
       this.handleAttack(time);
       return;
     }
 
-    if (this.isAttacking) return;
+    const isRunning = this.shiftKey.isDown && !this.isAttacking;
+    let velocity = this.speed;
 
-    // Movimento
-    const isRunning = this.shiftKey.isDown;
-    const velocity = isRunning ? this.runSpeed : this.speed;
+    if (this.isAttacking) {
+      velocity = this.attackMoveSpeed;
+    } else if (isRunning) {
+      velocity = this.runSpeed;
+    }
 
     let moving = false;
-
     this.setVelocity(0);
 
-    if (this.cursors.left.isDown) {
+    // MOVIMENTO COM WASD:
+    if (this.keyA.isDown) {
       this.setVelocityX(-velocity);
       this.setFlipX(true);
       moving = true;
-    } else if (this.cursors.right.isDown) {
+    } else if (this.keyD.isDown) {
       this.setVelocityX(velocity);
       this.setFlipX(false);
       moving = true;
     }
 
-    if (this.cursors.up.isDown) {
+    if (this.keyW.isDown) {
       this.setVelocityY(-velocity);
       moving = true;
-    } else if (this.cursors.down.isDown) {
+    } else if (this.keyS.isDown) {
       this.setVelocityY(velocity);
       moving = true;
     }
+
+    if (this.isAttacking) return;
 
     if (moving) {
       this.anims.play(isRunning ? 'run' : 'walk', true);
@@ -133,44 +141,59 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-handleAttack(time) {
-  if (this.isAttacking) return;
+  handleAttack(time) {
+    if (this.isAttacking) return;
 
-  this.isAttacking = true;
+    const isRunning = this.shiftKey.isDown && !this.isAttacking;
 
-  const isRunning = this.shiftKey.isDown;
+    // Ataque especial de corrida
+    if (isRunning && this.attackCombo === 0) {
+      this.isAttacking = true;
+      this.anims.play('attackRun', true);
+      this.attackTimer = time;
+      this.attackCombo = 0;
 
-  // Se estiver correndo, usa a animação de ataque especial
-  if (isRunning) {
-    this.anims.play('attackRun', true);
+      // Velocidade reduzida na direção que o personagem está virado
+      this.setVelocity(this.attackMoveSpeed * (this.flipX ? -1 : 1), 0);
 
-    this.attackCombo = 0; // Não entra no combo normal
+      this.once('animationcomplete', () => {
+        this.isAttacking = false;
+        this.attackCombo = 1;
+        this.attackTimer = this.scene.time.now;
+
+        // Continua o combo se o botão ainda estiver pressionado
+        if (this.attackButton.isDown) {
+          this.handleAttack(this.scene.time.now);
+        }
+      });
+      return;
+    }
+
+    // Combo normal (attack1 → attack2 → attack3)
+    this.isAttacking = true;
+    this.attackCombo++;
+    if (this.attackCombo > 3) this.attackCombo = 1;
+
+    const animKey = `attack${this.attackCombo}`;
+    this.anims.play(animKey, true);
+    this.attackTimer = time;
+
+    this.setVelocity(this.attackMoveSpeed * (this.flipX ? -1 : 1), 0);
 
     this.once('animationcomplete', () => {
       this.isAttacking = false;
-    });
 
-    return;
-  }
-
-  // Ataque em sequência normal (combo)
-  this.attackCombo++;
-  if (this.attackCombo > 3) this.attackCombo = 1;
-
-  const animKey = `attack${this.attackCombo}`;
-  this.anims.play(animKey, true);
-
-  this.attackTimer = time;
-
-  this.once('animationcomplete', () => {
-    this.isAttacking = false;
-
-    this.scene.time.delayedCall(this.comboResetTime, () => {
-      if (!this.isAttacking && this.scene.time.now - this.attackTimer >= this.comboResetTime) {
-        this.attackCombo = 0;
+      if (this.attackButton.isDown) {
+        // Continua o combo automaticamente enquanto o botão estiver pressionado
+        this.handleAttack(this.scene.time.now);
+      } else {
+        // Reseta o combo após o tempo se soltar o botão
+        this.scene.time.delayedCall(this.comboResetTime, () => {
+          if (!this.isAttacking && this.scene.time.now - this.attackTimer >= this.comboResetTime) {
+            this.attackCombo = 0;
+          }
+        });
       }
     });
-  });
-}
-
+  }
 }
