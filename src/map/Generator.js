@@ -1,27 +1,32 @@
 export default class Generator {
-  constructor(width, height) {
-    this.width = width;
-    this.height = height;
-    this.map = [];
+  constructor(scene, width, height, tileSize) {
+    this.scene = scene;
+    this.width = width; // largura em tiles
+    this.height = height; // altura em tiles
+    this.tileSize = tileSize; // tamanho do tile em pixels
+    this.tiles = [];
   }
 
   generate() {
     for (let y = 0; y < this.height; y++) {
-      this.map[y] = [];
       for (let x = 0; x < this.width; x++) {
-        if (y === 0 || y === this.height - 1) {
-          this.map[y][x] = '_';  // chão e teto
-        } else if (x === 0 || x === this.width - 1) {
-          this.map[y][x] = '|';  // paredes laterais
-        } else {
-          this.map[y][x] = ' ';  // vazio
+        // Exemplo simples: criar chão em y = altura - 1 e blocos aleatórios em outros lugares
+        if (y === this.height - 1 || Math.random() < 0.1) {
+          const tile = this.scene.add.rectangle(
+            x * this.tileSize + this.tileSize / 2,
+            y * this.tileSize + this.tileSize / 2,
+            this.tileSize,
+            this.tileSize,
+            0x654321
+          );
+          this.scene.physics.add.existing(tile, true); // corpo estático (true)
+          this.tiles.push(tile);
         }
       }
     }
-    return this.map;
   }
 
-  toText() {
-    return this.map.map(row => row.join(''));
+  getTilesGroup() {
+    return this.scene.physics.add.staticGroup(this.tiles);
   }
 }

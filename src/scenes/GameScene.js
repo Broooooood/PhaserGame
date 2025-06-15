@@ -2,6 +2,7 @@ import Player from '../characters/Player.js';
 import Slime from '../characters/enemies/Slime.js';
 
 
+
 export default class GameScene extends Phaser.Scene {
   constructor() {
     super('GameScene');
