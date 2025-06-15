@@ -1,3 +1,4 @@
+//src/enemies/Slime.js
 export default class Slime extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, player, generation = 0) {
     super(scene, x, y, 'slime_S_Walk');

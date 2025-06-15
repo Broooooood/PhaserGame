@@ -1,6 +1,8 @@
+//GameScene.js
+
 import Player from '../characters/Player.js';
 import Slime from '../characters/enemies/Slime.js';
-
+import MapGenerator from '../map/Generator.js';
 
 
 export default class GameScene extends Phaser.Scene {
@@ -9,6 +11,24 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
+    //tiles do chão
+    for (let i = 1; i <= 64; i++) {
+      const num = i.toString().padStart(2, '0');
+      this.load.image(`tile_${num}`, `src/assets/tiles/FieldsTile_${num}.png`);
+    }
+
+    //tiles das pedras
+    for (let i = 1; i <= 6; i++) {
+      this.load.image(`stone_${i}`, `src/assets/decorations/stones/${i}.png`);
+    }
+
+    //preload water
+    this.load.spritesheet('water', 'src/assets/water/water.png', {
+      frameWidth: 64,
+      frameHeight: 64
+    });
+
+
     //Player preload
     this.load.spritesheet('player_run', 'src/assets/player/Run.png', {
       frameWidth: 128,
@@ -45,12 +65,12 @@ export default class GameScene extends Phaser.Scene {
       frameHeight: 128
     });
 
-    this.load.spritesheet('player_attakRun', 'src/assets/player/Run+Attack.png', {
+    this.load.spritesheet('player_Dead', 'src/assets/player/Dead.png', {
       frameWidth: 128,
       frameHeight: 128
     });
 
-    this.load.spritesheet('player_Dead', 'src/assets/player/Dead.png', {
+    this.load.spritesheet('player_hurt', 'src/assets/player/Hurt.png', {
       frameWidth: 128,
       frameHeight: 128
     });
@@ -137,45 +157,40 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
-    this.mapWidth = 1920;
-    this.mapHeight = 1080;
+    //gerar mapa
+  this.tileSize = 32;
 
-    this.player = new Player(this, this.mapWidth / 2, this.mapHeight / 2);
+  this.mapGenerator = new MapGenerator(this, this.tileSize);
 
-    this.slimesGroup = this.physics.add.group();
-    const slime = new Slime(this, 100, 100, this.player);
-    this.slimesGroup.add(slime);
+  this.player = new Player(this, 0, 0);
 
-    this.physics.add.overlap(this.player, this.slimesGroup, (player, slime) => {
-      slime.dealDamage(player);
-    });
+  this.slimesGroup = this.physics.add.group();
+  const slime = new Slime(this, 100, 100, this.player);
+  this.slimesGroup.add(slime);
 
-    this.physics.add.overlap(this.player.attackHitbox, this.slimesGroup, (hitbox, slime) => {
-      if (this.player.isAttacking && !slime.isDead) {
-        slime.takeDamage(20); // ou outro valor
-      }
-    });
+  this.physics.add.overlap(this.player, this.slimesGroup, (player, slime) => {
+    slime.dealDamage(player);
+  });
 
+  this.physics.add.overlap(this.player.attackHitbox, this.slimesGroup, (hitbox, slime) => {
+    if (this.player.isAttacking && !slime.isDead) {
+      slime.takeDamage(20);
+    }
+  });
 
-  // Barra de fundo preta, origem central
-    this.healthBarBackground = this.add.rectangle(0, 0, 128, 10, 0x000000);
-    this.healthBarBackground.setOrigin(0.5, 0.5);
+  // Barra de vida
+  this.healthBarBackground = this.add.rectangle(0, 0, 128, 10, 0x000000).setOrigin(0.5);
+  this.healthBarFill = this.add.rectangle(0, 0, 128, 10, 0xff0000).setOrigin(0, 0.5);
 
-    // Barra vermelha de preenchimento, origem à esquerda e verticalmente centralizada
-    this.healthBarFill = this.add.rectangle(0, 0, 128, 10, 0xff0000);
-    this.healthBarFill.setOrigin(0, 0.5);
+  // Mundo e c�mera gigantes
+  this.physics.world.setBounds(-100000, -100000, 200000, 200000);
+  const cam = this.cameras.main;
+  cam.setBounds(-100000, -100000, 200000, 200000);
+  cam.startFollow(this.player, true, 0.1, 0.1);
 
+  this.scale.on('resize', this.resize, this);
+}
 
-    this.physics.world.setBounds(0, 0, this.mapWidth, this.mapHeight);
-
-    const cam = this.cameras.main;
-    cam.setBounds(0, 0, this.mapWidth, this.mapHeight);
-    cam.startFollow(this.player, true, 0.1, 0.1);
-
-    this.adjustCameraZoom();
-
-    this.scale.on('resize', this.resize, this);
-  }
 
   resize(gameSize) {
     if (!gameSize) return;
@@ -183,19 +198,22 @@ export default class GameScene extends Phaser.Scene {
     this.adjustCameraZoom();
   }
 
-  adjustCameraZoom() {
-    const width = this.scale.width;
-    const height = this.scale.height;
+adjustCameraZoom() {
+  const visibleTilesX = Math.floor(this.scale.width / this.tileSize);
+  const visibleTilesY = Math.floor(this.scale.height / this.tileSize);
 
-    const zoomX = width / this.mapWidth;
-    const zoomY = height / this.mapHeight;
-    const zoom = Math.min(zoomX, zoomY);
+  const zoomX = this.scale.width / (visibleTilesX * this.tileSize);
+  const zoomY = this.scale.height / (visibleTilesY * this.tileSize);
 
-    this.cameras.main.setZoom(zoom);
-  }
+  const zoom = Math.min(zoomX, zoomY);
+  this.cameras.main.setZoom(zoom);
+}
 
   update(time, delta) {
     this.player.update(time);
+
+    this.mapGenerator.update(this.player.x, this.player.y);
+
 
     this.slimesGroup.children.iterate((slime) => {
       slime.update();

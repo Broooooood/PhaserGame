@@ -1,3 +1,5 @@
+//src/player/Player.js
+
 export default class Player extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) {
         super(scene, x, y, 'player_idle');
@@ -102,7 +104,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         if (!scene.anims.exists('attackRun')) {
             scene.anims.create({
                 key: 'attackRun',
-                frames: scene.anims.generateFrameNumbers('player_attakRun', { start: 0, end: 5 }),
+                frames: scene.anims.generateFrameNumbers('player_attackRun', { start: 0, end: 5 }),
                 frameRate: 10,
                 repeat: 0
             });
