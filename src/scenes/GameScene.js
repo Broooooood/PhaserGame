@@ -29,7 +29,18 @@ export default class GameScene extends Phaser.Scene {
       const num = i.toString().padStart(2, '0');
       this.load.image(`grass_${i}`, `src/assets/decorations/grass/${i}.png`);
     }
+    //box
+    for (let i = 1; i <= 6; i++) {
+      const num = i.toString().padStart(2, '0');
+      this.load.image(`box_${i}`, `src/assets/obstacles/boxs/${i}.png`);
+    }
 
+    
+    //shadow
+    for (let i = 1; i <= 6; i++) {
+      const num = i.toString().padStart(2, '0');
+      this.load.image(`shadow_${i}`, `src/assets/decorations/shadow/${i}.png`);
+    }
     // Preload da água (spritesheet)
     this.load.spritesheet('water', 'src/assets/water/water1.png', {
       frameWidth: 64,

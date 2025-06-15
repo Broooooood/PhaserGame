@@ -1,4 +1,3 @@
-// src/characters/enemies/Enemy.js (atualize com isso)
 // src/characters/enemies/Enemy.js
 
 export default class Enemy extends Phaser.Physics.Arcade.Sprite {
@@ -11,6 +10,16 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     // Add to scene and enable physics body
     this.scene.add.existing(this);
     this.scene.physics.add.existing(this);
+
+    // Aumentar escala do inimigo para 1.2x
+    this.setScale(1.5);
+
+    // Ajustar corpo do inimigo para acompanhar a escala (opcional)
+    this.body.setSize(this.body.width, this.body.height);
+    this.body.setOffset(
+      this.body.offset.x - (this.displayWidth - this.body.width) / 2,
+      this.body.offset.y - (this.displayHeight - this.body.height) / 2
+    );
 
     this.speed = 50;
     this.visionRange = 150;
@@ -61,8 +70,11 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     // Position health bar above enemy
-    this.healthBarBackground.setPosition(this.x, this.y - this.height / 2 - 10);
-    this.healthBarFill.setPosition(this.x - (this.healthBarBackground.width / 2) * (1 - this.currentHealth / this.maxHealth), this.y - this.height / 2 - 10);
+    this.healthBarBackground.setPosition(this.x, this.y - this.displayHeight / 2 - 10);
+    this.healthBarFill.setPosition(
+      this.x - (this.healthBarBackground.width / 2) * (1 - this.currentHealth / this.maxHealth),
+      this.y - this.displayHeight / 2 - 10
+    );
 
     // Adjust fill width proportionally
     this.healthBarFill.width = this.healthBarBackground.width * (this.currentHealth / this.maxHealth);
@@ -96,7 +108,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     // Optional: you could play death animation, spawn loot, etc.
   }
 
- dealDamage(player) {
+  dealDamage(player) {
     if (!player.isInvincible) {
       player.currentHealth -= 10;
       player.isInvincible = true;
