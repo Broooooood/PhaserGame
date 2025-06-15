@@ -144,22 +144,24 @@ export default class Slime extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-split() {
-  // Permitir no máximo 2 gerações: original (0) → 1 → 2
-  if (this.generation >= 2) return;
+  split() {
+    if (this.generation >= 2) return;
 
-  const offsets = [
-    { x: 20, y: 0 },
-    { x: -20, y: 0 },
-    { x: 0, y: 20 },
-  ];
+    const offsets = [
+      { x: 20, y: 0 },
+      { x: -20, y: 0 },
+      { x: 0, y: 20 },
+    ];
 
-  offsets.forEach((offset) => {
-    const newX = this.x + offset.x;
-    const newY = this.y + offset.y;
+    offsets.forEach(offset => {
+      const newX = this.x + offset.x;
+      const newY = this.y + offset.y;
 
-    const newSlime = new Slime(this.scene, newX, newY, this.player, this.generation + 1);
-    this.scene.slimesGroup.add(newSlime);
-  });
-}
+      const newSlime = new Slime(this.scene, newX, newY, this.player, this.generation + 1);
+      this.scene.enemiesGroup.add(newSlime);
+
+      this.scene.setupEnemyCollisions(newSlime);
+    });
+  }
+
 }
