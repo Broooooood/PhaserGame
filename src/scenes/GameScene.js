@@ -25,17 +25,22 @@ export default class GameScene extends Phaser.Scene {
       frameHeight: 128
     });
 
-    this.load.spritesheet('player_attak1', 'src/assets/player/Attack1.png', {
+    this.load.spritesheet('player_attack1', 'src/assets/player/Attack1.png', {
       frameWidth: 128,
       frameHeight: 128
     });
 
-    this.load.spritesheet('player_attak2', 'src/assets/player/Attack2.png', {
+    this.load.spritesheet('player_attack2', 'src/assets/player/Attack2.png', {
       frameWidth: 128,
       frameHeight: 128
     });
 
-    this.load.spritesheet('player_attak3', 'src/assets/player/Attack3.png', {
+    this.load.spritesheet('player_attack3', 'src/assets/player/Attack3.png', {
+      frameWidth: 128,
+      frameHeight: 128
+    });
+
+    this.load.spritesheet('player_attackRun', 'src/assets/player/Run+Attack.png', {
       frameWidth: 128,
       frameHeight: 128
     });

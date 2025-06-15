@@ -6,8 +6,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         scene.physics.add.existing(this);
 
         this.setOrigin(0.5, 0.5);
-this.body.setSize(this.width * 0.5, this.height * 0.7);
-this.body.setOffset(this.width * 0.15, this.height * 0.4);
+        this.body.setSize(this.width * 0.5, this.height * 0.7);
+        this.body.setOffset(this.width * 0.15, this.height * 0.4);
         this.setCollideWorldBounds(true);
 
         this.maxHealth = 100;
@@ -75,7 +75,7 @@ this.body.setOffset(this.width * 0.15, this.height * 0.4);
         if (!scene.anims.exists('attack1')) {
             scene.anims.create({
                 key: 'attack1',
-                frames: scene.anims.generateFrameNumbers('player_attak1', { start: 0, end: 5 }),
+                frames: scene.anims.generateFrameNumbers('player_attack1', { start: 0, end: 5 }),
                 frameRate: 10,
                 repeat: 0
             });
@@ -84,7 +84,7 @@ this.body.setOffset(this.width * 0.15, this.height * 0.4);
         if (!scene.anims.exists('attack2')) {
             scene.anims.create({
                 key: 'attack2',
-                frames: scene.anims.generateFrameNumbers('player_attak2', { start: 0, end: 5 }),
+                frames: scene.anims.generateFrameNumbers('player_attack2', { start: 0, end: 5 }),
                 frameRate: 10,
                 repeat: 0
             });
@@ -93,7 +93,7 @@ this.body.setOffset(this.width * 0.15, this.height * 0.4);
         if (!scene.anims.exists('attack3')) {
             scene.anims.create({
                 key: 'attack3',
-                frames: scene.anims.generateFrameNumbers('player_attak3', { start: 0, end: 5 }),
+                frames: scene.anims.generateFrameNumbers('player_attack3', { start: 0, end: 5 }),
                 frameRate: 10,
                 repeat: 0
             });
