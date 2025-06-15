@@ -1,3 +1,5 @@
+//config.js
+
 import GameScene from './scenes/GameScene.js';
 
 export default {
