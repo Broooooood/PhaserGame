@@ -1,90 +1,387 @@
-// src/map/MapGenerator.js
-import Phaser from 'phaser';
+// src/map/Generator.js
 
-class Generator { // <-- Nome alterado para Generator
-    constructor(width, height, tileSize) {
-        this.MAP_WIDTH = width;
-        this.MAP_HEIGHT = height;
-        this.TILE_SIZE = tileSize;
-        this.mapData = [];
+export default class MapGenerator {
+    constructor(scene, tileSize) {
+        this.scene = scene;
+        this.tileSize = tileSize;
+        this.tiles = new Map();
+        this.stones = new Map();
+        this.grass = new Map();
+        this.waterTiles = new Map();
+        this.trees = new Map();
+        this.chunkSize = 32;
+        this.seed = Date.now();
+
+        this.grassData = {
+            1: { width: 10, height: 9 },
+            2: { width: 9, height: 7 },
+            3: { width: 6, height: 5 },
+            4: { width: 4, height: 3 },
+            5: { width: 9, height: 8 },
+            6: { width: 11, height: 9 }
+        };
+
+        this.stonesData = {
+            1: { width: 5, height: 6 },
+            2: { width: 9, height: 6 },
+            3: { width: 5, height: 7 },
+            4: { width: 8, height: 5 },
+            5: { width: 6, height: 10 },
+            6: { width: 5, height: 8 }
+        };
+
+        // Define tree dimensions for collision
+        this.treeDimensions = {
+            tree_1: { width: 66, height: 77 },
+            tree_2: { width: 29, height: 26 }
+        };
     }
 
-    // Inicializa o mapa com um tile padrão (ex: parede)
-    initializeMap(defaultTileIndex = 0) {
-        this.mapData = [];
-        for (let y = 0; y < this.MAP_HEIGHT; y++) {
-            this.mapData[y] = [];
-            for (let x = 0; x < this.MAP_WIDTH; x++) {
-                this.mapData[y][x] = defaultTileIndex;
+    simpleHash(x, y) {
+        const xHash = (x >= 0 ? x : ~x + 1) * 73856093;
+        const yHash = (y >= 0 ? y : ~y + 1) * 19349663;
+        return ((xHash ^ yHash ^ this.seed) >>> 0) % 100000;
+    }
+
+    isLakeTile(tx, ty, centers) {
+        for (const center of centers) {
+            const dx = tx - center.x;
+            const dy = ty - center.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist <= 4 + (this.simpleHash(tx, ty) % 3)) {
+                return true;
             }
         }
+        return false;
     }
 
-    createRoom(x, y, width, height, floorTileIndex = 1) {
-        for (let ry = y; ry < y + height; ry++) {
-            for (let rx = x; rx < x + width; rx++) {
-                if (rx >= 0 && rx < this.MAP_WIDTH && ry >= 0 && ry < this.MAP_HEIGHT) {
-                    this.mapData[ry][rx] = floorTileIndex;
+    getLakeCentersAround(tileX, tileY) {
+        const chunkX = Math.floor(tileX / this.chunkSize);
+        const chunkY = Math.floor(tileY / this.chunkSize);
+        const centers = [];
+
+        for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                const cx = chunkX + dx;
+                const cy = chunkY + dy;
+                const hash = this.simpleHash(cx, cy);
+                const hasLake = hash % 4 === 0;
+                if (hasLake) {
+                    const offsetX = hash % this.chunkSize;
+                    const offsetY = (hash >> 3) % this.chunkSize;
+                    const lakeX = cx * this.chunkSize + offsetX;
+                    const lakeY = cy * this.chunkSize + offsetY;
+                    centers.push({ x: lakeX, y: lakeY });
                 }
             }
         }
+        return centers;
     }
 
-    createCorridor(x1, y1, x2, y2, floorTileIndex = 1) {
-        let currentX = x1;
-        let currentY = y1;
+    update(playerX, playerY) {
+        const screenWidth = this.scene.scale.width;
+        const screenHeight = this.scene.scale.height;
 
-        // Corredor horizontal
-        while (currentX !== x2) {
-            if (currentX < x2) currentX++;
-            else currentX--;
-            if (currentX >= 0 && currentX < this.MAP_WIDTH && currentY >= 0 && currentY < this.MAP_HEIGHT) {
-                this.mapData[currentY][currentX] = floorTileIndex;
+        const tilesHorizontais = Math.ceil(screenWidth / this.tileSize);
+        const tilesVerticais = Math.ceil(screenHeight / this.tileSize);
+
+        const tileRangeX = Math.ceil(tilesHorizontais / 2) + 2;
+        const tileRangeY = Math.ceil(tilesVerticais / 2) + 2;
+
+        const playerTileX = Math.floor(playerX / this.tileSize);
+        const playerTileY = Math.floor(playerY / this.tileSize);
+
+        const lakeCenters = this.getLakeCentersAround(playerTileX, playerTileY);
+
+        const newTiles = new Map();
+        const newStones = new Map();
+        const newWaterTiles = new Map();
+        const newGrass = new Map();
+        const newTrees = new Map();
+
+
+        for (let y = -tileRangeY; y <= tileRangeY; y++) {
+            for (let x = -tileRangeX; x <= tileRangeX; x++) {
+                const tx = playerTileX + x;
+                const ty = playerTileY + y;
+                const key = `${tx}_${ty}`;
+
+                // === Verifica se est� dentro de um lago ===
+                let isWater = false;
+                for (const center of lakeCenters) {
+                    const dx = tx - center.x;
+                    const dy = ty - center.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist <= 4 + (this.simpleHash(tx, ty) % 3)) {
+                        isWater = true;
+                        break;
+                    }
+                }
+
+                if (isWater) {
+                    if (!this.waterTiles.has(key)) {
+                        const water = this.scene.physics.add.staticSprite(
+                            tx * this.tileSize + this.tileSize / 2,
+                            ty * this.tileSize + this.tileSize / 2,
+                            'water'
+                        );
+                        water.anims.play({ key: 'water_anim', startFrame: 0 }, true);
+                        water.setDepth(-90);
+                        this.scene.waterBlockGroup.add(water);
+                        newWaterTiles.set(key, water);
+                    } else {
+                        newWaterTiles.set(key, this.waterTiles.get(key));
+                    }
+                    continue; // N�o gera ch�o/pedra/grama se for �gua
+                }
+
+                // === Tile do ch�o ===
+                if (!this.tiles.has(key)) {
+                    const index = Phaser.Math.Between(1, 64).toString().padStart(2, '0');
+                    const tile = this.scene.add.image(
+                        tx * this.tileSize + this.tileSize / 2,
+                        ty * this.tileSize + this.tileSize / 2,
+                        `tile_${index}`
+                    );
+                    tile.setDepth(-100);
+                    newTiles.set(key, tile);
+                } else {
+                    newTiles.set(key, this.tiles.get(key));
+                }
+
+                // === Pedra ===
+                const hash = this.simpleHash(tx, ty);
+                const chance = hash % 100;
+
+                if (chance < 10) {
+                    if (!this.stones.has(key)) {
+                        const stoneIndex = (hash % 6) + 1;
+                        const stoneData = this.stonesData[stoneIndex];
+
+                        const maxOffsetX = this.tileSize - stoneData.width;
+                        const maxOffsetY = this.tileSize - stoneData.height;
+
+                        const offsetX = (hash * 3) % maxOffsetX;
+                        const offsetY = (hash * 7) % maxOffsetY;
+
+                        const stoneX = tx * this.tileSize + offsetX + stoneData.width / 2;
+                        const stoneY = ty * this.tileSize + offsetY + stoneData.height / 2;
+
+                        const stone = this.scene.add.image(stoneX, stoneY, `stone_${stoneIndex}`);
+                        stone.setDepth(-50);
+                        newStones.set(key, stone);
+                    } else {
+                        newStones.set(key, this.stones.get(key));
+                    }
+                } else {
+                    if (this.stones.has(key)) {
+                        this.stones.get(key).destroy();
+                    }
+                }
+
+                // === �rvores ===
+                const treeChance = hash % 100;
+                if (treeChance < 3) {
+                    if (!this.trees.has(key)) {
+                        const treeIndex = (hash % 2) + 1;
+                        const treeKey = `tree_${treeIndex}`;
+                        const treeDimensions = this.treeDimensions[treeKey];
+
+                        const offsetRange = this.tileSize * 0.3;
+                        const offsetX = (Math.random() - 0.5) * offsetRange;
+                        const offsetY = (Math.random() - 0.5) * offsetRange;
+
+                        const treeX = tx * this.tileSize + this.tileSize / 2 + offsetX;
+                        const treeY = ty * this.tileSize + this.tileSize / 2 + offsetY;
+
+                        const minScale = 1.2;
+                        const maxScale = 1.7;
+                        const scale = minScale + Math.random() * (maxScale - minScale);
+
+                        // Calculate the actual collision radius based on scaled dimensions
+                        const collisionWidth = treeDimensions.width * scale;
+                        const collisionHeight = treeDimensions.height * scale;
+                        const collisionRadius = Math.max(collisionWidth, collisionHeight) / 2;
+
+
+                        // Fun��o para checar se �rvore invade �gua
+                        const isInWater = (x, y, radius, tileSize, waterTiles) => {
+                            const minTileX = Math.floor((x - radius) / tileSize);
+                            const maxTileX = Math.floor((x + radius) / tileSize);
+                            const minTileY = Math.floor((y - radius) / tileSize);
+                            const maxTileY = Math.floor((y + radius) / tileSize);
+
+                            for (let ty = minTileY; ty <= maxTileY; ty++) {
+                                for (let tx = minTileX; tx <= maxTileX; tx++) {
+                                    if (waterTiles.has(`${tx}_${ty}`)) {
+                                        return true;
+                                    }
+                                }
+                            }
+                            return false;
+                        }
+
+                        if (isInWater(treeX, treeY, collisionRadius, this.tileSize, this.waterTiles)) {
+                            continue;
+                        }
+
+
+                        let tooClose = false;
+                        const checkRadiusInTiles = 4; // Check within a 4-tile radius for other trees
+
+                        for (let dy = -checkRadiusInTiles; dy <= checkRadiusInTiles; dy++) {
+                            for (let dx = -checkRadiusInTiles; dx <= checkRadiusInTiles; dx++) {
+                                const neighborKey = `${tx + dx}_${ty + dy}`;
+                                let otherTree = null;
+
+                                if (dx === 0 && dy === 0) continue;
+
+                                if (newTrees.has(neighborKey)) {
+                                    otherTree = newTrees.get(neighborKey);
+                                } else if (this.trees.has(neighborKey)) {
+                                    otherTree = this.trees.get(neighborKey);
+                                }
+
+                                if (otherTree) {
+                                    const otherTreeDimensions = this.treeDimensions[otherTree.texture.key];
+                                    const otherCollisionWidth = otherTreeDimensions.width * otherTree.scaleX;
+                                    const otherCollisionHeight = otherTreeDimensions.height * otherTree.scaleY;
+                                    const otherCollisionRadius = Math.max(otherCollisionWidth, otherCollisionHeight) / 2;
+
+                                    const d_x = otherTree.x - treeX;
+                                    const d_y = otherTree.y - treeY;
+                                    const dist = Math.sqrt(d_x * d_x + d_y * d_y);
+
+                                    const minDist = collisionRadius + otherCollisionRadius + 10; // Added a small buffer
+                                    if (dist < minDist) {
+                                        tooClose = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (tooClose) {
+                                break;
+                            }
+                        }
+
+                        if (!tooClose) {
+                            // Create a static physics sprite for the tree
+                            const tree = this.scene.physics.add.staticSprite(treeX, treeY, treeKey);
+                            tree.setScale(scale);
+
+                            // Set custom body size based on original dimensions and scale
+                            tree.body.setSize(treeDimensions.width, treeDimensions.height);
+                            tree.body.setOffset(-treeDimensions.width / 2, -treeDimensions.height / 2); // Center offset if needed based on tree's origin
+
+                            // Adjust offset for different tree types if their origins are not centered
+                            if (treeIndex === 1) {
+                                tree.body.setOffset(-treeDimensions.width * 0, -treeDimensions.height * -0.5); // For tree1, example offset to align collision at the trunk base
+                            } else if (treeIndex === 2) { // tree2 (29x26)
+                                // tree.body.setOffset(-treeDimensions.width * 0.5 * scale, -treeDimensions.height * 0.1 * scale); // Example: collision at bottom 10%
+                                tree.body.setOffset(-treeDimensions.width * 0, -treeDimensions.height * 0.1); // For tree2, example offset to align collision at the trunk base
+                            }
+
+                            const relativeY = ty - playerTileY;
+                            const baseDepth = 1000;
+                            const depthPerTile = 10;
+                            tree.setDepth(baseDepth + relativeY * depthPerTile);
+
+                            this.scene.treeGroup.add(tree); // Add to the treeGroup
+                            newTrees.set(key, tree);
+                        }
+                    } else {
+                        newTrees.set(key, this.trees.get(key));
+                    }
+                } else {
+                    if (this.trees.has(key)) {
+                        this.trees.get(key).destroy();
+                    }
+                }
+
+                // === Relva ===
+
+                // Zonas de relva (blocos de 8x8)
+                const grassZone = this.simpleHash(Math.floor(tx / 8), Math.floor(ty / 8)) % 5 === 0;
+
+                // Checa se est� perto de lago para aumentar chance
+                const isNearLake = lakeCenters.some(center => {
+                    const dx = tx - center.x;
+                    const dy = ty - center.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    return dist <= 7;
+                });
+
+                const grassChance = (hash >> 1) % 100;
+                let finalGrassChance = 50; // Base 50% chance de relva
+
+                if (grassZone) finalGrassChance += 20; // +20% em zona de relva
+                if (isNearLake) finalGrassChance += 30; // +30% perto de lago
+
+                if (grassChance < finalGrassChance) {
+                    if (!this.grass.has(key)) {
+                        const grassType = (hash % 6) + 1;
+                        const grassData = this.grassData[grassType];
+
+                        const maxOffsetX = this.tileSize - grassData.width;
+                        const maxOffsetY = this.tileSize - grassData.height;
+
+                        const offsetX = (hash * 5) % maxOffsetX;
+                        const offsetY = (hash * 11) % maxOffsetY;
+
+                        const grassX = tx * this.tileSize + offsetX + grassData.width / 2;
+                        const grassY = ty * this.tileSize + offsetY + grassData.height / 2;
+
+                        const grass = this.scene.add.image(grassX, grassY, `grass_${grassType}`);
+                        grass.setDepth(-70);
+
+                        // ** Escala vari�vel **
+                        const baseScale = 0.6;
+                        const maxScale = 3;
+                        const scale = baseScale + Math.random() * (maxScale - baseScale);
+                        grass.setScale(scale);
+
+                        newGrass.set(key, grass);
+                    } else {
+                        newGrass.set(key, this.grass.get(key));
+                    }
+                } else {
+                    if (this.grass.has(key)) {
+                        this.grass.get(key).destroy();
+                    }
+                }
             }
         }
 
-        // Corredor vertical
-        while (currentY !== y2) {
-            if (currentY < y2) currentY++;
-            else currentY--;
-            if (currentX >= 0 && currentX < this.MAP_WIDTH && currentY >= 0 && currentY < this.MAP_HEIGHT) {
-                this.mapData[currentY][currentX] = floorTileIndex;
+        // === Limpeza de tiles antigos ===
+        this.tiles.forEach((tile, key) => {
+            if (!newTiles.has(key)) tile.destroy();
+        });
+
+        this.stones.forEach((stone, key) => {
+            if (!newStones.has(key)) stone.destroy();
+        });
+
+        this.waterTiles.forEach((water, key) => {
+            if (!newWaterTiles.has(key)) water.destroy();
+        });
+
+        this.grass.forEach((grass, key) => {
+            if (!newGrass.has(key)) grass.destroy();
+        });
+
+        this.trees.forEach((tree, key) => {
+            // Destroy only if it's not in the new set AND it's a Phaser object
+            if (!newTrees.has(key) && tree && tree.destroy) {
+                tree.destroy();
             }
-        }
+        });
+
+
+        // Atualiza os mapas
+        this.tiles = newTiles;
+        this.stones = newStones;
+        this.waterTiles = newWaterTiles;
+        this.grass = newGrass;
+        this.trees = newTrees;
     }
-
-    // Método principal para gerar o mapa
-    generateDungeonMap(numRooms = 5, minRoomSize = 5, maxRoomSize = 15, wallTile = 0, floorTile = 1) {
-        this.initializeMap(wallTile);
-
-        const rooms = [];
-        for (let i = 0; i < numRooms; i++) {
-            const roomWidth = Phaser.Math.Between(minRoomSize, maxRoomSize);
-            const roomHeight = Phaser.Math.Between(minRoomSize, maxRoomSize);
-            const roomX = Phaser.Math.Between(1, this.MAP_WIDTH - roomWidth - 1);
-            const roomY = Phaser.Math.Between(1, this.MAP_HEIGHT - roomHeight - 1);
-
-            this.createRoom(roomX, roomY, roomWidth, roomHeight, floorTile);
-            rooms.push({ x: roomX, y: roomY, width: roomWidth, height: roomHeight });
-        }
-
-        // Conectar as salas
-        for (let i = 0; i < rooms.length - 1; i++) {
-            const room1 = rooms[i];
-            const room2 = rooms[i + 1];
-
-            const center1X = room1.x + Math.floor(room1.width / 2);
-            const center1Y = room1.y + Math.floor(room1.height / 2);
-            const center2X = room2.x + Math.floor(room2.width / 2);
-            const center2Y = room2.y + Math.floor(room2.height / 2);
-
-            this.createCorridor(center1X, center1Y, center2X, center2Y, floorTile);
-        }
-
-        return this.mapData;
-    }
-
-    // ... você pode adicionar outros métodos de geração aqui (e.g., autotiling)
 }
-
-export default Generator;
