@@ -61,7 +61,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     // Update health bar position
     this.updateHealthBar();
   }
-
+  
   updateHealthBar() {
     if (this.isDead) {
       this.healthBarBackground.setVisible(false);
@@ -69,19 +69,21 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    // Position health bar above enemy
-    this.healthBarBackground.setPosition(this.x, this.y - this.displayHeight / 2 - 10);
-    this.healthBarFill.setPosition(
-      this.x - (this.healthBarBackground.width / 2) * (1 - this.currentHealth / this.maxHealth),
-      this.y - this.displayHeight / 2 - 10
-    );
+    const barX = this.x;
+    const barY = this.y - this.displayHeight / 2 - 10;
 
-    // Adjust fill width proportionally
-    this.healthBarFill.width = this.healthBarBackground.width * (this.currentHealth / this.maxHealth);
+    // Atualiza posi��o das barras
+    this.healthBarBackground.setPosition(barX, barY);
+    this.healthBarFill.setPosition(barX, barY);
+
+    // Atualiza largura proporcional da barra de vida
+    const percentage = this.currentHealth / this.maxHealth;
+    this.healthBarFill.width = this.healthBarBackground.width * percentage;
 
     this.healthBarBackground.setVisible(true);
     this.healthBarFill.setVisible(true);
   }
+
 
   takeDamage(amount) {
     if (this.isDead) return;

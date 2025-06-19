@@ -1,6 +1,8 @@
 //config.js
 
 import GameScene from './scenes/GameScene.js';
+import MainMenuScene from './scenes/MainMenuScene.js';
+import PauseScene from './scenes/PauseScene.js';
 
 export default {
   type: Phaser.AUTO,
@@ -22,7 +24,7 @@ export default {
       debug: false,
     },
   },
-  scene: [GameScene],
+  scene: [MainMenuScene, GameScene, PauseScene],
 };
 
 

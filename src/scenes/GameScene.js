@@ -22,6 +22,14 @@ export default class GameScene extends Phaser.Scene {
     this.tileSize = 32;
     this.mapGenerator = new MapGenerator(this, this.tileSize);
 
+    this.input.keyboard.on('keydown-ESC', () => {
+      // Pausa a cena atual (GameScene)
+      this.scene.pause();
+      // Inicia a PauseScene por cima da GameScene
+      // 'launch' mantém a cena anterior ativa, mas em modo 'sleep' ou 'pause'
+      this.scene.launch('PauseScene');
+    });
+
     // Animação da água
     this.anims.create({
       key: 'water_anim',
@@ -71,8 +79,8 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // Barra de vida do player
-    this.healthBarBackground = this.add.rectangle(0, 0, 128, 10, 0x000000).setOrigin(0.5);
-    this.healthBarFill = this.add.rectangle(0, 0, 128, 10, 0xff0000).setOrigin(0, 0.5);
+    //this.healthBarBackground = this.add.rectangle(0, 0, 128, 10, 0x000000).setOrigin(0.5);
+    //this.healthBarFill = this.add.rectangle(0, 0, 128, 10, 0xff0000).setOrigin(0, 0.5);
 
     // Mundo e câmera gigantes
     this.physics.world.setBounds(-100000, -100000, 200000, 200000);
@@ -111,15 +119,15 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // Atualizar barra de vida do player
-    const healthPercent = this.player.currentHealth / this.player.maxHealth;
-    this.healthBarFill.width = 128 * healthPercent;
+    //const healthPercent = this.player.currentHealth / this.player.maxHealth;
+    //this.healthBarFill.width = 128 * healthPercent;
 
     // Posicionar a barra acima do player
-    const barX = this.player.x;
-    const barY = this.player.y - 80;
+    //const barX = this.player.x;
+    //const barY = this.player.y - 80;
 
-    this.healthBarBackground.setPosition(barX, barY);
-    this.healthBarFill.setPosition(barX - 128 / 2, barY);
+   // this.healthBarBackground.setPosition(barX, barY);
+    //this.healthBarFill.setPosition(barX - 128 / 2, barY);
   }
 
   setupEnemyCollisions(enemy) {
@@ -131,7 +139,7 @@ export default class GameScene extends Phaser.Scene {
 
   this.physics.add.overlap(this.player.attackHitbox, enemy, (hitbox, enemy) => {
     if (this.player.isAttacking && !enemy.isDead) {
-      enemy.takeDamage(20);
+      enemy.takeDamage(10);
     }
   });
 }

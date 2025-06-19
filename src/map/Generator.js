@@ -7,7 +7,9 @@ export default class MapGenerator {
     this.stones = new Map();
     this.grass = new Map();
     this.waterTiles = new Map();
+    this.trees = new Map();
     this.chunkSize = 32;
+    this.seed = Date.now();
 
     this.grassData = {
       1: { width: 10, height: 9 },
@@ -28,9 +30,11 @@ export default class MapGenerator {
     };
   }
 
-  simpleHash(x, y) {
-    return Math.abs((x * 73856093) ^ (y * 19349663)) % 100000;
-  }
+ simpleHash(x, y) {
+  const xHash = (x >= 0 ? x : ~x + 1) * 73856093;
+  const yHash = (y >= 0 ? y : ~y + 1) * 19349663;
+  return ((xHash ^ yHash ^ this.seed) >>> 0) % 100000;
+}
 
   isLakeTile(tx, ty, centers) {
     for (const center of centers) {
@@ -87,6 +91,8 @@ update(playerX, playerY) {
   const newStones = new Map();
   const newWaterTiles = new Map();
   const newGrass = new Map();
+  const newTrees = new Map();
+
 
   for (let y = -tileRangeY; y <= tileRangeY; y++) {
     for (let x = -tileRangeX; x <= tileRangeX; x++) {
@@ -167,9 +173,109 @@ update(playerX, playerY) {
         }
       }
 
+// === Árvores ===
+const treeChance = hash % 100;
+if (treeChance < 3) {
+    if (!this.trees.has(key)) {
+        const treeIndex = (hash % 2) + 1;
+
+        const offsetRange = this.tileSize * 0.3;
+        const offsetX = (Math.random() - 0.5) * offsetRange;
+        const offsetY = (Math.random() - 0.5) * offsetRange;
+
+        const treeX = tx * this.tileSize + this.tileSize / 2 + offsetX;
+        const treeY = ty * this.tileSize + this.tileSize / 2 + offsetY;
+
+        const minScale = 1.2;
+        const maxScale = 1.7;
+        const scale = minScale + Math.random() * (maxScale - minScale);
+
+        const radius = 16 * scale;
+
+        // Função para checar se árvore invade água
+        function isInWater(x, y, radius, tileSize, waterTiles) {
+            const minTileX = Math.floor((x - radius) / tileSize);
+            const maxTileX = Math.floor((x + radius) / tileSize);
+            const minTileY = Math.floor((y - radius) / tileSize);
+            const maxTileY = Math.floor((y + radius) / tileSize);
+
+            for (let ty = minTileY; ty <= maxTileY; ty++) {
+                for (let tx = minTileX; tx <= maxTileX; tx++) {
+                    if (waterTiles.has(`${tx}_${ty}`)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        if (isInWater(treeX, treeY, radius, this.tileSize, this.waterTiles)) {
+            continue;
+        }
+        
+        // Checar distância das outras árvores de forma mais robusta
+        let tooClose = false;
+        // O raio de verificação em tiles. Calculado com base na distância mínima.
+        const checkRadiusInTiles = 4;
+
+        for (let dy = -checkRadiusInTiles; dy <= checkRadiusInTiles; dy++) {
+            for (let dx = -checkRadiusInTiles; dx <= checkRadiusInTiles; dx++) {
+                const neighborKey = `${tx + dx}_${ty + dy}`;
+                let otherTree = null;
+
+                // Não precisa checar o próprio tile, pois a árvore ainda não foi adicionada
+                if (dx === 0 && dy === 0) continue;
+
+                // Procura a árvore no mapa de novas árvores ou no mapa de árvores existentes
+                if (newTrees.has(neighborKey)) {
+                    otherTree = newTrees.get(neighborKey);
+                } else if (this.trees.has(neighborKey)) {
+                    otherTree = this.trees.get(neighborKey);
+                }
+
+                // Se uma árvore foi encontrada no tile vizinho, calcula a distância
+                if (otherTree) {
+                    const d_x = otherTree.x - treeX;
+                    const d_y = otherTree.y - treeY;
+                    const dist = Math.sqrt(d_x * d_x + d_y * d_y);
+
+                    const otherRadius = 16 * otherTree.scaleX;
+                    const minDist = radius + otherRadius + 60;
+
+                    if (dist < minDist) {
+                        tooClose = true;
+                        break; // Sai do loop de `dx`
+                    }
+                }
+            }
+            if (tooClose) {
+                break; // Sai do loop de `dy`
+            }
+        }
+
+        if (!tooClose) {
+            const tree = this.scene.add.image(treeX, treeY, `tree_${treeIndex}`);
+            tree.setScale(scale);
+
+            const relativeY = ty - playerTileY;
+            const baseDepth = 1000;
+            const depthPerTile = 10;
+            tree.setDepth(baseDepth + relativeY * depthPerTile);
+
+            newTrees.set(key, tree);
+        }
+    } else {
+        newTrees.set(key, this.trees.get(key));
+    }
+    } else {
+        if (this.trees.has(key)) {
+            this.trees.get(key).destroy();
+        }
+    }
+
       // === Relva ===
 
-      // Zonas de grama (blocos de 8x8) - chance maior de grama nessas zonas
+      // Zonas de relva (blocos de 8x8)
       const grassZone = this.simpleHash(Math.floor(tx / 8), Math.floor(ty / 8)) % 5 === 0;
 
       // Checa se est� perto de lago para aumentar chance
@@ -181,9 +287,9 @@ update(playerX, playerY) {
       });
 
       const grassChance = (hash >> 1) % 100;
-      let finalGrassChance = 50; // Base 15% chance de grama
+      let finalGrassChance = 50; // Base 50% chance de relva
 
-      if (grassZone) finalGrassChance += 20; // +20% em zona de grama
+      if (grassZone) finalGrassChance += 20; // +20% em zona de relva
       if (isNearLake) finalGrassChance += 30; // +30% perto de lago
 
       if (grassChance < finalGrassChance) {
@@ -239,10 +345,17 @@ update(playerX, playerY) {
     if (!newGrass.has(key)) grass.destroy();
   });
 
+  this.trees.forEach((tree, key) => {
+    if (!newTrees.has(key)) tree.destroy();
+  });
+
+
+
   // Atualiza os mapas
   this.tiles = newTiles;
   this.stones = newStones;
   this.waterTiles = newWaterTiles;
   this.grass = newGrass;
+  this.trees = newTrees;
 }
 }

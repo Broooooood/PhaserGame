@@ -12,11 +12,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.body.setOffset(this.width * 0.15, this.height * 0.4);
         this.setCollideWorldBounds(true);
 
-        this.maxHealth = 100;
+        this.maxHealth = 500;
         this.currentHealth = this.maxHealth;
 
-
-        //debug
+        // debug
         this.debugGraphics = scene.add.graphics();
 
         this.keyW = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
@@ -26,8 +25,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.shiftKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
         this.attackButton = scene.input.activePointer;
 
-        this.speed = 150;
-        this.runSpeed = 250;
+        this.speed = 200;
+        this.runSpeed = this.speed + 150;
         this.attackMoveSpeed = 50;
 
         this.isAttacking = false;
@@ -39,11 +38,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.anims.play('idle');
 
         // Hitbox de ataque invisível
-        this.attackHitbox = scene.add.rectangle(0, 0, 60, 80, 0xff0000, 0.3); //0.3 debug
+        this.attackHitbox = scene.add.rectangle(0, 0, 60, 80, 0xff0000, 0.3);
         scene.physics.add.existing(this.attackHitbox);
         this.attackHitboxBody = this.attackHitbox.body;
         this.attackHitboxBody.setAllowGravity(false);
         this.attackHitboxBody.setEnable(false);
+
+        // Barra de vida
+        this.healthBarBackground = scene.add.rectangle(0, 0, 128, 10, 0x000000).setOrigin(0.5);
+        this.healthBarFill = scene.add.rectangle(0, 0, 128, 10, 0xff0000).setOrigin(0, 0.5);
     }
 
     createAnimations(scene) {
@@ -112,6 +115,17 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     update(time) {
+        // Atualizar posição da barra de vida para seguir o player
+        this.healthBarBackground.x = this.x;
+        this.healthBarBackground.y = this.y - 80;
+
+        this.healthBarFill.x = this.x - 64;
+        this.healthBarFill.y = this.y - 80;
+
+        // Atualiza largura da barra de vida com base na saúde atual
+        const healthPercent = Phaser.Math.Clamp(this.currentHealth / this.maxHealth, 0, 1);
+        this.healthBarFill.width = 128 * healthPercent;
+
         if (this.attackButton.isDown && !this.isAttacking) {
             this.handleAttack(time);
             return;
@@ -127,9 +141,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         }
 
         if (this.flipX) {
-          this.body.setOffset(50, this.height * 0.4); // valor fixo para a esquerda
+            this.body.setOffset(50, this.height * 0.4); // valor fixo para a esquerda
         } else {
-          this.body.setOffset(5, this.height * 0.4);  // valor fixo para a direita
+            this.body.setOffset(5, this.height * 0.4);  // valor fixo para a direita
         }
 
         let moving = false;
@@ -137,12 +151,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
         if (this.keyA.isDown) {
             this.setVelocityX(-velocity);
-            // Alterado de setScale para flipX
             this.flipX = true; // Vira para a esquerda
             moving = true;
         } else if (this.keyD.isDown) {
             this.setVelocityX(velocity);
-            // Alterado de setScale para flipX
             this.flipX = false; // Vira para a direita (orientação original)
             moving = true;
         }
@@ -155,10 +167,13 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
             moving = true;
         }
 
-        // Se o jogador estiver se movendo diagonalmente, o flipX deve prevalecer da última direção horizontal.
-        // Se ele está se movendo apenas verticalmente, a direção horizontal não muda.
-
         if (this.isAttacking) return;
+
+        if (!this.body.velocity.x && !this.body.velocity.y) {
+            if (this.scene.time.now - this.attackTimer > this.comboResetTime) {
+                this.attackCombo = 0;
+            }
+        }
 
         if (moving) {
             this.anims.play(isRunning ? 'run' : 'walk', true);
@@ -185,25 +200,34 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     takeDamage(amount) {
         this.currentHealth -= amount;
         if (this.currentHealth < 0) this.currentHealth = 0;
-        // Você pode colocar efeitos de dano aqui também
+        // Poderia colocar efeitos de dano aqui
     }
 
     handleAttack(time) {
         if (this.isAttacking) return;
 
-        const isRunning = this.shiftKey.isDown && !this.isAttacking;
+        const isRunning = this.shiftKey.isDown;
 
-        if (isRunning && this.attackCombo === 0) {
+        if (isRunning && !this.isAttacking) {
             this.isAttacking = true;
             this.anims.play('attackRun', true);
             this.attackTimer = time;
             this.attackCombo = 0;
-            // Ajusta a velocidade de ataque baseada na direção atual
-            this.setVelocity(this.attackMoveSpeed * (this.flipX ? -1 : 1), 0);
+
+            this.setVelocity(0);
+
+            const offsetX = this.flipX ? -40 : 40;
+            const offsetY = 20;
+            this.attackHitbox.setPosition(this.x + offsetX, this.y + offsetY);
+            this.attackHitboxBody.setEnable(true);
+
+            this.scene.time.delayedCall(200, () => {
+                this.attackHitboxBody.setEnable(false);
+            });
 
             this.once('animationcomplete', () => {
                 this.isAttacking = false;
-                this.attackCombo = 1;
+                this.attackHitboxBody.setEnable(false);
                 this.attackTimer = this.scene.time.now;
                 if (this.attackButton.isDown) {
                     this.handleAttack(this.scene.time.now);
@@ -220,12 +244,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.anims.play(animKey, true);
         this.attackTimer = time;
 
-        // Ajusta a velocidade de ataque baseada na direção atual
-        this.setVelocity(this.attackMoveSpeed * (this.flipX ? -1 : 1), 0);
+        this.setVelocity(0);
 
-        // Hitbox de ataque ativada
-        // A posição da hitbox deve considerar o flipX do player
-        const offsetX = this.flipX ? -40 : 40; // Se virado, o offset é negativo
+        const offsetX = this.flipX ? -40 : 40;
         const offsetY = 20;
         this.attackHitbox.setPosition(this.x + offsetX, this.y + offsetY);
         this.attackHitboxBody.setEnable(true);
@@ -237,15 +258,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.once('animationcomplete', () => {
             this.isAttacking = false;
             this.attackHitboxBody.setEnable(false);
+            this.attackTimer = this.scene.time.now;
+            this.attackCombo = 0; // Resetar combo após ataque parado
+            this.setVelocity(0);
 
             if (this.attackButton.isDown) {
                 this.handleAttack(this.scene.time.now);
-            } else {
-                this.scene.time.delayedCall(this.comboResetTime, () => {
-                    if (!this.isAttacking && this.scene.time.now - this.attackTimer >= this.comboResetTime) {
-                        this.attackCombo = 0;
-                    }
-                });
             }
         });
     }

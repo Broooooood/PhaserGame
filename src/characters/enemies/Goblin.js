@@ -7,8 +7,8 @@ export default class Goblin extends Enemy {
     super(scene, x, y, 'goblin_S_Walk', player);
 
     this.speed = 90;
-    this.maxHealth = 70;
-    this.currentHealth = 70;
+    this.maxHealth = 1000;
+    this.currentHealth = this.maxHealth;
     this.attackRange = 30;      // Definir um alcance de ataque para o goblin
     this.attackCooldown = 1000; // Cooldown do ataque
     this.lastAttackTime = 0;

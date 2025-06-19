@@ -8,7 +8,7 @@ export default class Wolf extends Enemy {
 
     this.speed = 120;
     this.maxHealth = 100;
-    this.currentHealth = 100;
+    this.currentHealth = this.maxHealth;
     this.attackRange = 40;
     this.attackCooldown = 800;
     this.lastAttackTime = 0; // Controle do cooldown

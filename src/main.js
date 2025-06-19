@@ -1,35 +1,41 @@
-//main.js
+// main.js
 
 import config from './config.js';
 
 const game = new Phaser.Game(config);
 
 window.addEventListener('resize', () => {
-
   setTimeout(() => {
-  // Pega a cena ativa pelo nome
-  const scene = game.scene.getScene('GameScene');
+    // Pega a cena ativa (qualquer que seja)
+    const scene = game.scene.isActive('GameScene') ? game.scene.getScene('GameScene') : game.scene.getScene('MainMenuScene');
+    // Uma forma ainda melhor:
+    const activeScene = game.scene.scenes.find(scene => game.scene.isActive(scene.scene.key));
 
-  if (!scene) return;
 
-  // Pega as dimensões da janela
-  const width = window.innerWidth;
-  const height = window.innerHeight;
+    if (!activeScene) return;
 
-  // Redimensiona o jogo
-  game.scale.resize(width, height);
+    // Pega as dimensões da janela
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
-  // Ajusta a câmera para cobrir o mapa inteiro e manter proporção
-  const cam = scene.cameras.main;
+    // Redimensiona o canvas do jogo
+    game.scale.resize(width, height);
 
-  cam.setSize(width, height);
+    // Ajusta a câmera da cena ativa
+    const cam = activeScene.cameras.main;
+    cam.setSize(width, height);
+    if (activeScene.mapWidth && activeScene.mapHeight) {
+        // Lógica específica da GameScene
+        const zoom = Math.min(width / activeScene.mapWidth, height / activeScene.mapHeight);
+        cam.setZoom(zoom);
+        cam.centerOn(activeScene.mapWidth / 2, activeScene.mapHeight / 2);
+    } else {
+        cam.setZoom(1);
+        cam.centerOn(game.scale.width / 2, game.scale.height / 2);
+    }
 
-  // Zoom proporcional para caber a tela sem distorção
-  const zoom = Math.min(width / scene.mapWidth, height / scene.mapHeight);
-
-  cam.setZoom(zoom);
-
-  // Centraliza no meio do mapa
-  cam.centerOn(scene.mapWidth / 2, scene.mapHeight / 2);
-  },10);
+  }, 10);
 });
+
+// Dispara um evento de resize inicial para garantir que tudo fique no lugar
+window.dispatchEvent(new Event('resize'));

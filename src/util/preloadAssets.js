@@ -33,7 +33,7 @@ export function preloadAssets(scene) {
   // tree = arvores
   for (let i = 1; i <= 2; i++) {
     const num = i.toString().padStart(2, '0');
-    scene.load.image(`tree_${i}`, `src/assets/obstacles/boxs/Tree${i}.png`);
+    scene.load.image(`tree_${i}`, `src/assets/obstacles/tree/Tree${i}.png`);
   }
 
   // logs = troncos
