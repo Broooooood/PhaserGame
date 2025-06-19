@@ -1,4 +1,6 @@
 // src/map/Generator.js
+
+
 export default class MapGenerator {
   constructor(scene, tileSize) {
     this.scene = scene;

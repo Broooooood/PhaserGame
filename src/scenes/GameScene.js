@@ -1,5 +1,4 @@
 // GameScene.js
-
 import Player from '../characters/Player.js';
 import Slime from '../characters/enemies/Slime.js';
 import Goblin from '../characters/enemies/Goblin.js';
@@ -7,6 +6,7 @@ import Wolf from '../characters/enemies/Wolf.js';
 import Bee from '../characters/enemies/Bee.js';
 import MapGenerator from '../map/Generator.js';
 import { preloadAssets } from '../util/preloadAssets.js';
+
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -18,19 +18,14 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
-    // Gerar mapa
     this.tileSize = 32;
     this.mapGenerator = new MapGenerator(this, this.tileSize);
 
     this.input.keyboard.on('keydown-ESC', () => {
-      // Pausa a cena atual (GameScene)
       this.scene.pause();
-      // Inicia a PauseScene por cima da GameScene
-      // 'launch' mantém a cena anterior ativa, mas em modo 'sleep' ou 'pause'
       this.scene.launch('PauseScene');
     });
 
-    // Animação da água
     this.anims.create({
       key: 'water_anim',
       frames: this.anims.generateFrameNumbers('water', { start: 0, end: 3 }),
@@ -40,7 +35,6 @@ export default class GameScene extends Phaser.Scene {
 
     this.waterBlockGroup = this.physics.add.staticGroup();
 
-    // Encontrar posição válida para o jogador (fora da água)
     let playerX = 0;
     let playerY = 0;
     let isInWater = true;
@@ -63,14 +57,11 @@ export default class GameScene extends Phaser.Scene {
       attempts++;
     }
 
-    // Criar jogador fora da água
-    this.player = new Player(this, playerX, playerY);
+    this.enemiesGroup = this.physics.add.group();
+
+    this.player = new Player(this, playerX, playerY, this.enemiesGroup);
     this.physics.add.collider(this.player, this.waterBlockGroup);
 
-    // Criar grupo genérico de inimigos
-    this.enemiesGroup = this.physics.add.group();
-    
-    // Spawner: spawn aleatório a cada 2 segundos
     this.time.addEvent({
       delay: 2000,
       callback: this.spawnRandomEnemy,
@@ -78,11 +69,6 @@ export default class GameScene extends Phaser.Scene {
       loop: true
     });
 
-    // Barra de vida do player
-    //this.healthBarBackground = this.add.rectangle(0, 0, 128, 10, 0x000000).setOrigin(0.5);
-    //this.healthBarFill = this.add.rectangle(0, 0, 128, 10, 0xff0000).setOrigin(0, 0.5);
-
-    // Mundo e câmera gigantes
     this.physics.world.setBounds(-100000, -100000, 200000, 200000);
     const cam = this.cameras.main;
     cam.setBounds(-100000, -100000, 200000, 200000);
@@ -110,40 +96,22 @@ export default class GameScene extends Phaser.Scene {
 
   update(time, delta) {
     this.player.update(time);
-
     this.mapGenerator.update(this.player.x, this.player.y);
 
-    // Atualizar todos os inimigos
     this.enemiesGroup.getChildren().forEach(enemy => {
       enemy.update(time, delta);
     });
-
-    // Atualizar barra de vida do player
-    //const healthPercent = this.player.currentHealth / this.player.maxHealth;
-    //this.healthBarFill.width = 128 * healthPercent;
-
-    // Posicionar a barra acima do player
-    //const barX = this.player.x;
-    //const barY = this.player.y - 80;
-
-   // this.healthBarBackground.setPosition(barX, barY);
-    //this.healthBarFill.setPosition(barX - 128 / 2, barY);
   }
 
   setupEnemyCollisions(enemy) {
-  this.physics.add.collider(enemy, this.waterBlockGroup);
+    this.physics.add.collider(enemy, this.waterBlockGroup);
 
-  this.physics.add.overlap(this.player, enemy, (player, enemy) => {
-    enemy.dealDamage(player);
-  });
+    this.physics.add.overlap(this.player, enemy, (player, enemy) => {
+      enemy.dealDamage(player);
+    });
 
-  this.physics.add.overlap(this.player.attackHitbox, enemy, (hitbox, enemy) => {
-    if (this.player.isAttacking && !enemy.isDead) {
-      enemy.takeDamage(10);
-    }
-  });
-}
-
+    // Removido o overlap da attackHitbox, agora o player gerencia isso internamente
+  }
 
   spawnRandomEnemy() {
     const enemyTypes = [Slime, Goblin, Wolf, Bee];
@@ -173,8 +141,7 @@ export default class GameScene extends Phaser.Scene {
 
     const enemy = new EnemyClass(this, x, y, this.player);
     this.enemiesGroup.add(enemy);
-
     this.setupEnemyCollisions(enemy);
   }
-
 }
+
