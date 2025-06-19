@@ -8,6 +8,7 @@ import MapGenerator from '../map/Generator.js';
 import { preloadAssets } from '../util/preloadAssets.js';
 
 
+
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super('GameScene');
@@ -18,6 +19,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
+      this.physics.world.createDebugGraphic();
         this.tileSize = 32;
         this.mapGenerator = new MapGenerator(this, this.tileSize);
 
@@ -63,6 +65,9 @@ export default class GameScene extends Phaser.Scene {
         this.player = new Player(this, playerX, playerY, this.enemiesGroup);
         this.physics.add.collider(this.player, this.waterBlockGroup);
         this.physics.add.collider(this.player, this.treeGroup); // New: Player collides with trees
+        this.physics.add.collider(this.player, this.enemies, (player, enemy) => {
+          enemy.dealDamage(player);
+        });
 
         this.time.addEvent({
             delay: 2000,

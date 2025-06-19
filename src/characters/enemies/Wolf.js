@@ -7,7 +7,7 @@ export default class Wolf extends Enemy {
     super(scene, x, y, 'wolf_S_Walk', player);
 
     this.speed = 120;
-    this.maxHealth = 100;
+    this.maxHealth = 70;
     this.currentHealth = this.maxHealth;
     this.attackRange = 40;
     this.attackCooldown = 800;

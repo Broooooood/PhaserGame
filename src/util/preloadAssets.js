@@ -92,6 +92,23 @@ export function preloadAssets(scene) {
     frameHeight: 128
   });
 
+  scene.load.spritesheet('thunder_strike', 'src/effects/thunder/ThunderStrike.png', {
+    frameWidth: 64,
+    frameHeight: 64
+  });
+
+   scene.load.spritesheet('thunder_splash', 'src/effects/thunder/ThunderSplashr.png', {
+    frameWidth: 48,
+    frameHeight: 48
+  });
+
+    scene.load.spritesheet('explosion', 'src/effects/fire/Explosion.png', {
+    frameWidth: 48,
+    frameHeight: 48
+  });
+
+
+
   // Preload dos inimigos
 
   // Slime

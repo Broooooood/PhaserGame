@@ -225,7 +225,7 @@ export default class MapGenerator {
                             continue;
                         }
 
-                        // Checar dist�ncia das outras �rvores de forma mais robusta
+
                         let tooClose = false;
                         const checkRadiusInTiles = 4; // Check within a 4-tile radius for other trees
 
@@ -274,13 +274,11 @@ export default class MapGenerator {
                             tree.body.setOffset(-treeDimensions.width / 2, -treeDimensions.height / 2); // Center offset if needed based on tree's origin
 
                             // Adjust offset for different tree types if their origins are not centered
-                            if (treeIndex === 1) { // tree1 (66x77) might have its origin at the bottom center or top left
-                                // If the image origin is top-left by default (0,0), and you want the collision body to be at the base
-                                // tree.body.setOffset(-treeDimensions.width * 0.5 * scale, -treeDimensions.height * 0.1 * scale); // Example: collision at bottom 10%
-                                tree.body.setOffset(-treeDimensions.width * 0.5, -treeDimensions.height * 0.1); // For tree1, example offset to align collision at the trunk base
+                            if (treeIndex === 1) {
+                                tree.body.setOffset(-treeDimensions.width * 0, -treeDimensions.height * -0.5); // For tree1, example offset to align collision at the trunk base
                             } else if (treeIndex === 2) { // tree2 (29x26)
                                 // tree.body.setOffset(-treeDimensions.width * 0.5 * scale, -treeDimensions.height * 0.1 * scale); // Example: collision at bottom 10%
-                                tree.body.setOffset(-treeDimensions.width * 0.5, -treeDimensions.height * 0.1); // For tree2, example offset to align collision at the trunk base
+                                tree.body.setOffset(-treeDimensions.width * 0, -treeDimensions.height * 0.1); // For tree2, example offset to align collision at the trunk base
                             }
 
                             const relativeY = ty - playerTileY;
