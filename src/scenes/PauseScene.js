@@ -53,11 +53,10 @@ export default class PauseScene extends Phaser.Scene {
         menuButton.on('pointerover', () => this.game.canvas.style.cursor = 'pointer');
         menuButton.on('pointerout', () => this.game.canvas.style.cursor = 'default');
         menuButton.on('pointerdown', () => {
-            this.game.canvas.style.cursor = 'default';
-            // **CORRE��O AQUI:** Parar a GameScene antes de iniciar o MainMenuScene
-            this.scene.stop('GameScene');   // Adicione esta linha para parar a GameScene
-            this.scene.stop('PauseScene');  // Adicione esta linha para parar a PauseScene
-            this.scene.start('MainMenuScene'); // Inicia a cena do menu principal
+            this.game.canvas.style.cursor = 'default'; 
+            this.scene.stop('GameScene');   
+            this.scene.stop('PauseScene');  
+            this.scene.start('MainMenuScene'); 
         });
 
         // Opcional: Permitir que a tecla ESC tamb�m feche o menu de pausa

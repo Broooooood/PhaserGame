@@ -1,4 +1,3 @@
-// GameScene.js
 import Player from '../characters/Player.js';
 import Slime from '../characters/enemies/Slime.js';
 import Goblin from '../characters/enemies/Goblin.js';
@@ -6,7 +5,6 @@ import Wolf from '../characters/enemies/Wolf.js';
 import Bee from '../characters/enemies/Bee.js';
 import MapGenerator from '../map/Generator.js';
 import { preloadAssets } from '../util/preloadAssets.js';
-
 
 
 export default class GameScene extends Phaser.Scene {
@@ -19,7 +17,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
-      this.physics.world.createDebugGraphic();
+        this.physics.world.createDebugGraphic();
         this.tileSize = 32;
         this.mapGenerator = new MapGenerator(this, this.tileSize);
 
@@ -27,6 +25,10 @@ export default class GameScene extends Phaser.Scene {
             this.scene.pause();
             this.scene.launch('PauseScene');
         });
+
+        // NEW: Listen for player death event
+        this.events.on('playerDeath', this.handlePlayerDeath, this);
+
 
         this.anims.create({
             key: 'water_anim',
@@ -65,7 +67,7 @@ export default class GameScene extends Phaser.Scene {
         this.player = new Player(this, playerX, playerY, this.enemiesGroup);
         this.physics.add.collider(this.player, this.waterBlockGroup);
         this.physics.add.collider(this.player, this.treeGroup); // New: Player collides with trees
-        this.physics.add.collider(this.player, this.enemies, (player, enemy) => {
+        this.physics.add.collider(this.player, this.enemiesGroup, (player, enemy) => { // Changed from this.enemies to this.enemiesGroup
           enemy.dealDamage(player);
         });
 
@@ -102,7 +104,9 @@ export default class GameScene extends Phaser.Scene {
     }
 
     update(time, delta) {
-        this.player.update(time);
+        if (!this.player.isDead) { // Only update player if not dead
+            this.player.update(time);
+        }
         this.mapGenerator.update(this.player.x, this.player.y);
 
         this.enemiesGroup.getChildren().forEach(enemy => {
@@ -148,5 +152,12 @@ export default class GameScene extends Phaser.Scene {
         const enemy = new EnemyClass(this, x, y, this.player);
         this.enemiesGroup.add(enemy);
         this.setupEnemyCollisions(enemy);
+    }
+
+    handlePlayerDeath() {
+        console.log("Player has died! Transitioning to Main Menu.");
+        this.scene.stop('GameScene'); 
+        this.scene.stop('PauseScene');
+        this.scene.start('MainMenuScene'); 
     }
 }

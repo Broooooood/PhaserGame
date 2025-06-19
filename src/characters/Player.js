@@ -1,5 +1,3 @@
-// src/player/Player.js
-
 export default class Player extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y, enemiesGroup) {
         super(scene, x, y, 'player_idle');
@@ -14,8 +12,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.body.setOffset(this.width * 0.15, this.height * 0.4);
         this.setCollideWorldBounds(true);
 
-        this.maxHealth = 500;
+        this.maxHealth = 100;
         this.currentHealth = this.maxHealth;
+        this.isDead = false; // Add isDead flag
+         this.isInvincible = false;
 
         this.debugGraphics = scene.add.graphics();
 
@@ -108,9 +108,23 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
                 repeat: 0
             });
         }
+
+        if (!scene.anims.exists('playerDead')) {
+            scene.anims.create({
+                key: 'playerDead',
+                frames: scene.anims.generateFrameNumbers('player_Dead', { start: 0, end: 5 }),
+                frameRate: 8,
+                repeat: 0 
+            });
+        }
     }
 
     update(time) {
+        if (this.isDead) {
+            this.setVelocity(0);
+            return;
+        }
+
         this.healthBarBackground.x = this.x;
         this.healthBarBackground.y = this.y - 80;
         this.healthBarFill.x = this.x - 64;
@@ -189,9 +203,40 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     takeDamage(amount) {
+        if (this.isDead) return; // Prevent damage if already dead
         this.currentHealth -= amount;
-        if (this.currentHealth < 0) this.currentHealth = 0;
+        if (this.currentHealth <= 0) {
+            this.currentHealth = 0;
+            this.die(); // Call die method when health reaches zero
+        }
     }
+
+    die() {
+        this.isDead = true;
+        this.setVelocity(0); // Stop player movement
+        this.anims.play('playerDead'); // Play death animation
+        this.healthBarBackground.setVisible(false); // Hide health bar
+        this.healthBarFill.setVisible(false); // Hide health bar
+
+        // Disable input
+        this.keyW.enabled = false;
+        this.keyA.enabled = false;
+        this.keyS.enabled = false;
+        this.keyD.enabled = false;
+        this.shiftKey.enabled = false;
+        this.attackButton.enabled = false;
+
+        // Disable physics body
+        this.body.enable = false;
+        this.attackHitboxBody.setEnable(false);
+
+        // Emit an event that the GameScene can listen to for transitioning
+        this.once('animationcomplete-playerDead', () => {
+            this.scene.events.emit('playerDeath');
+            this.destroy(); // Remove the player object after animation
+        });
+    }
+
 
     checkAttackHitboxCollision() {
         if (!this.isAttacking || !this.attackHitboxBody.enable) return;

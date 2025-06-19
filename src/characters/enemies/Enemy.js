@@ -19,24 +19,18 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
         const originalWidth = this.texture.get().width;
         const originalHeight = this.texture.get().height;
 
-        // === VALORES PARA AJUSTAR ===
-        // Experimente com estes percentuais para definir o tamanho da hitbox
-        // Por exemplo, 0.5 = 50% da largura original, 0.7 = 70% da altura original
         const hitboxWidthPercentage = 0.5;  // 50% da largura original da imagem
         const hitboxHeightPercentage = 0.7; // 70% da altura original da imagem
 
         const actualHitboxWidth = originalWidth * hitboxWidthPercentage;
         const actualHitboxHeight = originalHeight * hitboxHeightPercentage;
 
-        // Calcula o offset para centralizar a hitbox horizontalmente e puxar para baixo verticalmente
-        // offsetX: Centraliza a hitbox na largura original da imagem
+   
         const offsetX = (originalWidth - actualHitboxWidth) / 2;
 
         // offsetY: Posiciona a hitbox verticalmente.
-        // `originalHeight - actualHitboxHeight` alinha a base da hitbox com a base da imagem.
-        // Adicione um valor positivo para "puxar para baixo" ainda mais.
-        // Subtraia um valor para "subir" a hitbox (se ela estiver muito baixa).
-        const offsetY = originalHeight - actualHitboxHeight + 5; // Ajuste o '5' conforme necessário!
+ 
+        const offsetY = originalHeight - actualHitboxHeight + 5;
 
         // Aplica o novo tamanho e offset à hitbox
         this.body.setSize(actualHitboxWidth, actualHitboxHeight);
@@ -118,26 +112,22 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
   die() {
     this.isDead = true;
     this.setVelocity(0);
-
-    // Hide enemy sprite and health bar
     this.setVisible(false);
     this.healthBarBackground.setVisible(false);
     this.healthBarFill.setVisible(false);
-
-    // Disable physics body
     this.body.enable = false;
-
-    // Optional: you could play death animation, spawn loot, etc.
   }
 
   dealDamage(player) {
-    if (!player.isInvincible) {
-      player.currentHealth -= 10; // O dano base é 10
-      player.isInvincible = true;
-
-      this.scene.time.delayedCall(1000, () => {
-        player.isInvincible = false;
-      });
+        if (player.isDead) {
+            return;
+        }
+        if (!player.isInvincible) {
+            player.takeDamage(10);
+            player.isInvincible = true;
+            this.scene.time.delayedCall(1000, () => {
+                player.isInvincible = false;
+            });
+        }
     }
-  }
 }
