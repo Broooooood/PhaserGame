@@ -1,29 +1,29 @@
-// scenes/MainMenuScene.js
-
 export default class MainMenuScene extends Phaser.Scene {
   constructor() {
     super('MainMenuScene');
+
+    // Vamos guardar referências aos nossos elementos de UI
+    this.titleText = null;
+    this.startButton = null;
   }
 
   preload() {
+    // O preload pode continuar vazio se não houver assets a carregar
   }
 
   create() {
-    const { width, height } = this.scale;
-
-    // Adiciona uma cor de fundo (opcional, se já estiver no config)
     this.cameras.main.setBackgroundColor('#1d1d1d');
 
-    // Adiciona o título do jogo
-    this.add.text(width / 2, height / 2 - 100, 'Trabalho Phaser', {
+    // Adiciona o título do jogo, mas sem posição inicial fixa
+    this.titleText = this.add.text(0, 0, 'Trabalho Phaser', {
       fontFamily: 'Arial',
       fontSize: '64px',
       color: '#ffffff',
       align: 'center'
     }).setOrigin(0.5);
 
-    // Cria um botão de "Iniciar Jogo"
-    const startButton = this.add.text(width / 2, height / 2 + 50, 'Iniciar Jogo', {
+    // Cria um botão de "Iniciar Jogo", também sem posição inicial
+    this.startButton = this.add.text(0, 0, 'Iniciar Jogo', {
       fontFamily: 'Arial',
       fontSize: '48px',
       color: '#00ff00',
@@ -35,25 +35,38 @@ export default class MainMenuScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Torna o botão interativo
-    startButton.setInteractive();
+    this.startButton.setInteractive();
 
     // Adiciona eventos ao botão
-    startButton.on('pointerover', () => {
-      // Efeito de hover (ex: muda a cor de fundo)
-      startButton.setBackgroundColor('#555555');
+    this.startButton.on('pointerover', () => {
+      this.startButton.setBackgroundColor('#555555');
       this.game.canvas.style.cursor = 'pointer';
     });
 
-    startButton.on('pointerout', () => {
-      // Retorna à cor original
-      startButton.setBackgroundColor('#333333');
+    this.startButton.on('pointerout', () => {
+      this.startButton.setBackgroundColor('#333333');
       this.game.canvas.style.cursor = 'default';
     });
 
-    startButton.on('pointerdown', () => {
-      // Inicia a cena do jogo quando o botão é clicado
+    this.startButton.on('pointerdown', () => {
       this.scene.start('GameScene');
       this.game.canvas.style.cursor = 'default';
     });
+
+    // 1. "Escuta" o evento 'resize' do gerenciador de escala do Phaser
+    this.scale.on('resize', this.handleResize, this);
+
+    // 2. Chama a função de redimensionamento uma vez para definir a posição inicial
+    this.handleResize({ width: this.scale.width, height: this.scale.height });
+  }
+
+  handleResize(gameSize) {
+    const { width, height } = gameSize;
+
+    // Centraliza o título
+    this.titleText.setPosition(width / 2, height / 2 - 100);
+
+    // Centraliza o botão
+    this.startButton.setPosition(width / 2, height / 2 + 50);
   }
 }
