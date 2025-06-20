@@ -132,7 +132,7 @@ export default class MapGenerator {
                     } else {
                         newWaterTiles.set(key, this.waterTiles.get(key));
                     }
-                    continue; // N�o gera ch�o/pedra/grama se for �gua
+                    continue; // N�o gera ch�o/pedra/relva se for �gua
                 }
 
                 // === Tile do ch�o ===
@@ -227,7 +227,7 @@ export default class MapGenerator {
 
 
                         let tooClose = false;
-                        const checkRadiusInTiles = 4; // Check within a 4-tile radius for other trees
+                        const checkRadiusInTiles = 4; // verifica se não tem arvores á volta
 
                         for (let dy = -checkRadiusInTiles; dy <= checkRadiusInTiles; dy++) {
                             for (let dx = -checkRadiusInTiles; dx <= checkRadiusInTiles; dx++) {
@@ -265,20 +265,19 @@ export default class MapGenerator {
                         }
 
                         if (!tooClose) {
-                            // Create a static physics sprite for the tree
+                            // Cria um static physics sprite para a arvore
                             const tree = this.scene.physics.add.staticSprite(treeX, treeY, treeKey);
                             tree.setScale(scale);
 
-                            // Set custom body size based on original dimensions and scale
+                            // Dá escalas aleatorias as arvores
                             tree.body.setSize(treeDimensions.width, treeDimensions.height);
-                            tree.body.setOffset(-treeDimensions.width / 2, -treeDimensions.height / 2); // Center offset if needed based on tree's origin
+                            tree.body.setOffset(-treeDimensions.width / 2, -treeDimensions.height / 2); 
 
-                            // Adjust offset for different tree types if their origins are not centered
+                            // ajusta offset dos tipos de arvores 
                             if (treeIndex === 1) {
-                                tree.body.setOffset(-treeDimensions.width * 0, -treeDimensions.height * -0.5); // For tree1, example offset to align collision at the trunk base
-                            } else if (treeIndex === 2) { // tree2 (29x26)
-                                // tree.body.setOffset(-treeDimensions.width * 0.5 * scale, -treeDimensions.height * 0.1 * scale); // Example: collision at bottom 10%
-                                tree.body.setOffset(-treeDimensions.width * 0, -treeDimensions.height * 0.1); // For tree2, example offset to align collision at the trunk base
+                                tree.body.setOffset(-treeDimensions.width * 0, -treeDimensions.height * -0.5); 
+                            } else if (treeIndex === 2) { 
+                                tree.body.setOffset(-treeDimensions.width * 0, -treeDimensions.height * 0.1);
                             }
 
                             const relativeY = ty - playerTileY;
@@ -286,7 +285,7 @@ export default class MapGenerator {
                             const depthPerTile = 10;
                             tree.setDepth(baseDepth + relativeY * depthPerTile);
 
-                            this.scene.treeGroup.add(tree); // Add to the treeGroup
+                            this.scene.treeGroup.add(tree); 
                             newTrees.set(key, tree);
                         }
                     } else {
@@ -370,7 +369,6 @@ export default class MapGenerator {
         });
 
         this.trees.forEach((tree, key) => {
-            // Destroy only if it's not in the new set AND it's a Phaser object
             if (!newTrees.has(key) && tree && tree.destroy) {
                 tree.destroy();
             }

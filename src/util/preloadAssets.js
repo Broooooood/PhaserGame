@@ -91,7 +91,7 @@ export function preloadAssets(scene) {
     frameWidth: 128,
     frameHeight: 128
   });
-
+  //abilidades
   scene.load.spritesheet('thunder_strike', 'src/effects/thunder/ThunderStrike.png', {
     frameWidth: 64,
     frameHeight: 64

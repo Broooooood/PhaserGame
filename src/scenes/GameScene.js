@@ -26,7 +26,7 @@ export default class GameScene extends Phaser.Scene {
             this.scene.launch('PauseScene');
         });
 
-        // NEW: Listen for player death event
+  
         this.events.on('playerDeath', this.handlePlayerDeath, this);
 
 
@@ -38,7 +38,7 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.waterBlockGroup = this.physics.add.staticGroup();
-        this.treeGroup = this.physics.add.staticGroup(); // New: Group for tree collisions
+        this.treeGroup = this.physics.add.staticGroup(); 
 
         let playerX = 0;
         let playerY = 0;
@@ -66,8 +66,8 @@ export default class GameScene extends Phaser.Scene {
 
         this.player = new Player(this, playerX, playerY, this.enemiesGroup);
         this.physics.add.collider(this.player, this.waterBlockGroup);
-        this.physics.add.collider(this.player, this.treeGroup); // New: Player collides with trees
-        this.physics.add.collider(this.player, this.enemiesGroup, (player, enemy) => { // Changed from this.enemies to this.enemiesGroup
+        this.physics.add.collider(this.player, this.treeGroup); 
+        this.physics.add.collider(this.player, this.enemiesGroup, (player, enemy) => { 
           enemy.dealDamage(player);
         });
 
@@ -104,7 +104,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     update(time, delta) {
-        if (!this.player.isDead) { // Only update player if not dead
+        if (!this.player.isDead) { 
             this.player.update(time);
         }
         this.mapGenerator.update(this.player.x, this.player.y);
@@ -116,7 +116,7 @@ export default class GameScene extends Phaser.Scene {
 
     setupEnemyCollisions(enemy) {
         this.physics.add.collider(enemy, this.waterBlockGroup);
-        this.physics.add.collider(enemy, this.treeGroup); // New: Enemies collide with trees
+        this.physics.add.collider(enemy, this.treeGroup); 
 
         this.physics.add.overlap(this.player, enemy, (player, enemy) => {
             enemy.dealDamage(player);

@@ -14,9 +14,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.body.setOffset(this.width * 0.15, this.height * 0.4);
         this.setCollideWorldBounds(true);
 
-        this.maxHealth = 100;
+        this.maxHealth = 300;
         this.currentHealth = this.maxHealth;
-        this.isDead = false; // Add isDead flag
+        this.isDead = false; 
          this.isInvincible = false;
 
         this.debugGraphics = scene.add.graphics();
@@ -37,7 +37,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.attackTimer = 0;
         this.comboResetTime = 600;
 
-        // NOVO: Conjunto para rastrear inimigos já atingidos neste ataque
+        
         this.enemiesHitInAttack = new Set();
 
         this.createAnimations(scene);
